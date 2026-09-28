@@ -1,6 +1,6 @@
 ---
 name: playwright-site-explorer
-description: Use this agent to do a quick, broad exploration of a web application and produce a sitemap (areas, routes, navigation, key elements), a short card per area and a minimal seed per area, so other agents (test planner, generator, healer) can navigate the app and investigate specific features themselves. It maps the site; it does not test or deep-dive features. It surveys the site, plans the areas, then spawns one explorer per area (or per section of a large area) so no single agent has to map the whole site. Run it before playwright-test-planner when docs/sitemap/ is missing or stale.
+description: Use this agent to do a quick, broad exploration of a web application and produce a sitemap (areas, routes, navigation, key elements), a short card per area and a minimal seed per area, so other agents (test planner, generator, healer) can navigate the app and investigate specific features themselves. It maps the site; it does not test or deep-dive features. It surveys the site, plans the areas, then spawns one explorer per area (or per section of a large area) so no single agent has to map the whole site. Run it before playwright-test-planner when docs/sitemap/ is missing or stale. Run it as the main agent (`claude --agent playwright-site-explorer`) so it can spawn per-area workers; started as a subagent it maps the areas one at a time itself.
 tools: Agent(webapp-agents:playwright-site-explorer), Glob, Grep, Read, Write, Edit, Bash
 skills: webapp-agents:playwright-cli
 model: sonnet
@@ -72,7 +72,9 @@ sections and rows for areas you did not visit this run, and never wipe another a
 1. **Get a logged-in browser** (keep this short — only enough to start exploring)
    - Read `playwright.config.ts`, `<fixtures>` and `<base-seed>` to learn the base URL, the auth setup
      (`<setup-project>` project + `<storage-state>`) and what the `page` fixture does before a test starts
-   - Read `docs/sitemap/README.md` so you know which areas are already mapped
+   - Read `docs/sitemap/README.md` so you know which areas are already mapped. Rows with status `exploring` or
+     `failed` are left over from an interrupted or failed run: re-plan them in step 3. Leave `done` rows alone
+     unless the prompt names that area; re-plan `partial` rows only for their remaining routes
    - Open an authenticated session on the base seed's URL as in **Browser session** below. If you cannot get past login, map what
      is publicly reachable and say so in the final message. Do not try to debug the auth setup
 
@@ -113,8 +115,8 @@ sections and rows for areas you did not visit this run, and never wipe another a
    </explorer-area>
    ```
 
-   - **Concurrency**: run up to 3 workers in parallel. Each worker uses its own `--debug=cli` session, so they don't
-     share a browser. Areas flagged with mutation risk, and sections of the same split area, run one at a time
+   - **Concurrency**: run up to 3 workers in parallel. Each worker uses its own named `playwright-cli -s=<area>`
+     session, so they don't share a browser. Areas flagged with mutation risk, and sections of the same split area, run one at a time
    - Don't pass the whole survey to every worker, only its own area's facts: keeping each worker's context small is
      the point of splitting
    - When a worker returns, read the card and seed it wrote (don't trust the summary alone) and record its result. If
@@ -134,8 +136,8 @@ sections and rows for areas you did not visit this run, and never wipe another a
    `PLAYWRIGHT_HTML_OPEN=never npx playwright test <seeds-dir> --headed <smoke-projects>`. Fix any that fail, or send the area back to a worker
    once with the failure output; don't investigate further
 
-7. **Clean up** — check with `ps` that no `--debug=cli` runs or `playwright-cli` sessions are left behind (yours or a
-   worker's) and stop any strays
+7. **Clean up** — check with `ps` that no `npx playwright test` runs or `playwright-cli` sessions are left behind
+   (yours or a worker's) and stop any strays
 
 # Area worker workflow
 
@@ -178,7 +180,8 @@ out of scope are recorded as links, not followed. Breadth over depth: one visit 
    ```
 
    - Run your seed once headed: `PLAYWRIGHT_HTML_OPEN=never npx playwright test <seeds-dir>/<area>.seed.spec.ts
-     --headed <smoke-projects>`. Fix it if it fails; don't investigate further
+     --headed --no-deps <smoke-projects>`. `--no-deps` skips the `<setup-project>` dependency so you reuse the
+     existing `<storage-state>` instead of logging in again. Fix it if it fails; don't investigate further
 
 4. **Clean up** — close your session (see **Browser session**)
 
