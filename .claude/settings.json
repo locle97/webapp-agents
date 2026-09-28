@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "webapp-agents@webapp-agents": true
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "create-agent": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "skills/create-agent/SKILL.md",
+      "computedHash": "32ca0951f1f5d9e4f7a92afafecb31cc6f30dcfed864b108bddacbfa0a7a7bd5"
+    }
+  }
+}
