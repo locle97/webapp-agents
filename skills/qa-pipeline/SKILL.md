@@ -22,3 +22,7 @@ Arguments: $ARGUMENTS
 3. If it comes back BLOCKED with questions, ask the user, then send the answers to the same manager with SendMessage
    (or, if that is unavailable, spawn a new manager naming the mission id so it resumes from its mission log).
 4. When it finishes, give the user its final report as it is.
+
+Never spawn `playwright-site-explorer` from this skill, even when the report says an area has no sitemap doc or a
+shallow one. The planner explores what it needs itself. Pass the follow-up on to the user, who can run the explorer
+separately.

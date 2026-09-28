@@ -1,6 +1,6 @@
 ---
 name: playwright-test-planner
-description: Use this agent when you need to create a test plan for a web application or website, scoped by an effort level (low, medium or high; default medium)
+description: Use this agent when you need to create or extend a test plan (specs/<feature>.plan.md) for a web application, scoped by an effort level (low, medium or high; default medium). Spawned by playwright-qa-manager in the PLANNING phase.
 tools: Glob, Grep, Read, Write, Edit, Bash
 skills: webapp-agents:playwright-cli
 model: sonnet
@@ -40,7 +40,8 @@ You will:
      pitfalls are already documented — don't re-discover them, only verify what your scenarios depend on
    - If the area has no doc, or it is marked shallow and you need more, say so in your final output (the explorer
      should be run for it) and explore the missing parts yourself
-   - If the live app contradicts the doc, trust the app and fix the doc (update its "Last explored" date)
+   - If the live app contradicts the doc, trust the app. At `high`, fix the doc (update its "Last explored" date);
+     at `low` and `medium`, note the mismatch in your final output instead
 
 1. **Set up the page through the seed**
    - Confirm the workspace has Playwright (`npx --no-install playwright --version`)
@@ -57,7 +58,8 @@ You will:
      2. `playwright-cli -s=<name> open --headed` — pick your own session name (e.g. the area name).
      3. `playwright-cli -s=<name> state-load <storage-state>` — restores the same authenticated
         cookies/localStorage every real test run gets from `storageState: <storage-state>`. If the file
-        is missing, stop and say so — the manager needs to log in first.
+        is missing, or `goto` lands on `<login-url>`, stop and report `auth: storage state missing or expired`
+        so the manager can log in again. Never run `<setup-project>` or write to `<storage-state>` yourself.
      4. `playwright-cli -s=<name> goto <resolved seed URL>` — lands you on the same page a real test's seed would.
         This session isn't running under the Playwright test runner, so there's no test to finish and no teardown
         to race: it stays open until you `close` it yourself.
@@ -99,7 +101,8 @@ You will:
    - Success criteria and failure conditions
 
 6. **Clean up**
-   - `playwright-cli close` and stop the background seed test run when exploration is done
+   - `playwright-cli -s=<name> close` when exploration is done, and check `playwright-cli list` for sessions you left
+     open
 
 7. **Create Documentation**
 
@@ -115,4 +118,6 @@ You will:
 - Ensure scenarios are independent and can be run in any order
 
 **Output Format**: Always save the complete test plan as a markdown file with clear headings, numbered steps, and
-professional formatting suitable for sharing with development and QA teams.
+professional formatting suitable for sharing with development and QA teams. Then end your final message with the
+`qa-report` block your prompt asks for: one `planned` row per scenario you added or changed, and in
+`open_questions` any scope problem (requirements left uncovered by the cap) and any missing or shallow sitemap doc.

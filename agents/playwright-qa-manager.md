@@ -1,7 +1,7 @@
 ---
 name: playwright-qa-manager
-description: Use this agent to drive a QA mission end to end. It takes a goal, requirements or a Jira ticket plus the user's explanation, then orchestrates playwright-test-planner → playwright-test-generator → playwright-test-healer, tracks every test case in a markdown mission log under docs/qa-missions/, and finishes with a report listing each test case and its status. Start it with the /qa-pipeline skill (`/qa-pipeline [low|medium|high] <mission>`) or as the main agent (`claude --agent playwright-qa-manager`).
-tools: Agent(webapp-agents:playwright-test-planner, webapp-agents:playwright-test-generator, webapp-agents:playwright-test-healer), Glob, Grep, Read, Write, Edit, Bash
+description: Use this agent when the user wants a QA mission driven end to end. It takes a goal, requirements or a Jira ticket plus the user's explanation, then orchestrates playwright-test-planner → playwright-test-generator → playwright-test-healer, tracks every test case in a markdown mission log under docs/qa-missions/, and finishes with a report listing each test case and its status. Start it with the /qa-pipeline skill (`/qa-pipeline [low|medium|high] <mission>`) or as the main agent (`claude --agent playwright-qa-manager`).
+tools: Agent(webapp-agents:playwright-test-planner, webapp-agents:playwright-test-generator, webapp-agents:playwright-test-healer), SendMessage, Glob, Grep, Read, Write, Edit, Bash
 model: sonnet
 color: orange
 ---
@@ -97,7 +97,19 @@ you, can pick up any mission from the files alone.
   is read-only. Record the decision under **Constraints**.
 - Ask the user **only** if you cannot tell what to test or whether data mutation is allowed. Otherwise make
   reasonable assumptions and record them.
-- Create the mission file, add the mission to the index, and set the phase to PLANNING.
+- Create the mission file, add the mission to the index.
+- **Log in once, before any subagent starts.** The planner, generators and healers all only read
+  `<storage-state>`. None of them runs `<setup-project>` (one-time code replays, rate limits, the file being
+  overwritten), so you refresh it yourself:
+  ```bash
+  PLAYWRIGHT_HTML_OPEN=never npx playwright test --project=<setup-project> --headed --reporter=list
+  ```
+  Check that it passed and that `<storage-state>` exists. If it fails, set the phase to BLOCKED and report the
+  error, but never the credentials. Skip this step when the project has no auth (see `project-conventions.md`).
+- **Auth failures**: if any subagent reports `auth: storage state missing or expired`, run the setup command above
+  again and send that task back to a new subagent. This does not count against the retry budget. Never run setup
+  while a subagent is running.
+- Set the phase to PLANNING.
 
 ## 2. PLANNING → `playwright-test-planner`
 
@@ -143,18 +155,8 @@ Spawn **one generator per scenario**. Each prompt uses the generator's input for
 Add the spec path (`specs/<feature>.plan.md`), the effort level as `<effort>...</effort>`, the mission constraints
 and the **report contract**.
 
-- **Log in once, before any generator starts.** Generators run with `--no-deps` and never run the `setup`
-  project, so each generator doesn't log in again (one-time code replays, rate limits, `<storage-state>` being
-  overwritten). You refresh the
-  shared storage state yourself:
-  ```bash
-  PLAYWRIGHT_HTML_OPEN=never npx playwright test --project=<setup-project> --headed --reporter=list
-  ```
-  Check that it passed and that `<storage-state>` exists before you spawn anything. If it fails, set the
-  phase to BLOCKED and report the error, but never the credentials.
-- **Auth failures**: if a generator reports `auth: storage state missing or expired`, run the setup command above
-  again and send that scenario back to a new generator. This does not count against the retry budget. Never run
-  setup while a generator is running.
+- You logged in at the end of INTAKE. If a generator reports `auth: storage state missing or expired`, follow the
+  **Auth failures** rule there.
 - **One generator at a time.** Never run generators in parallel, even for read-only scenarios. Parallel generators
   share the same browser session and block each other. Spawn the next generator only after the previous one has
   returned and you have recorded its result.
@@ -172,7 +174,7 @@ The healer's default is to run the whole suite. Always scope it to this mission'
   healers race each other.
 - The prompt lists the failing file, the failure summary from the generator or the last run, the spec path and
   scenario id, the effort level as `<effort>...</effort>`, the constraints, and the **report contract**. Tell it to
-  run and fix only that file, not the whole suite.
+  run and fix only that file, not the whole suite, and that the storage state is already fresh.
 - Set the case to `healing` before spawning. Afterwards, set the status from the healer's report:
   - `passed` if it is fixed and the rerun is green
   - `fixme` if the healer marked it `test.fixme()` (record the reason: suspected app bug or behavior)
@@ -193,12 +195,15 @@ Don't take subagent reports on trust. Run the mission's test files yourself:
 ```bash
 # low and medium: Chromium only (<smoke-projects>: --project=chromium plus any serial Chrome project)
 PLAYWRIGHT_HTML_OPEN=never PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/qa-<mission-id>.json \
-  npx playwright test <file> <file> ... <smoke-projects> --reporter=list,json
+  npx playwright test <file> <file> ... <smoke-projects> --no-deps --headed --reporter=list,json
 
 # high: every project in playwright.config.ts; run it twice to catch flaky tests
 PLAYWRIGHT_HTML_OPEN=never PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/qa-<mission-id>.json \
-  npx playwright test <file> <file> ... --reporter=list,json
+  npx playwright test <file> <file> ... --no-deps --headed --reporter=list,json
 ```
+
+`--no-deps` keeps the setup project from logging in again. If the run fails on auth, refresh the storage state as
+in INTAKE and run it again.
 
 - A case is `passed` only if it passed in every project it ran in (at `high`, on both runs). If it failed in any
   project, it is `failed`: name the project and the error. A test that ran as fixme or skipped is `fixme`.
@@ -231,7 +236,13 @@ files_changed: [<paths>]
 spec_changed: <yes|no>: <what changed>
 open_questions: [<anything the manager or user must decide>]
 ```
+
+Statuses by agent: planner `planned`; generator `passed` or `failed` (the first run of the new test); healer
+`passed`, `fixme`, `needs-decision` or `blocked`. Auth problems are reported as `failed` or `blocked` with the note
+`auth: storage state missing or expired`.
 ````
+
+Map a generator's `passed`/`failed` to `generated-pass`/`generated-fail` in the mission log.
 
 If a subagent returns without the block, work out the statuses from its message and from running the test file
 yourself. Never guess a status.

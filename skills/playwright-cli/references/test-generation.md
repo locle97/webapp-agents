@@ -378,14 +378,14 @@ Rules:
 
 ### 2.3 Generate multiple scenarios
 
-Loop 2.2 over the targeted scenarios one at a time, opening a fresh `playwright-cli` session (with its own `-s=<name>`) and reloading the auth state for each, so every scenario starts from a clean page. This is safe to parallelise as long as each run uses its own session name throughout (never the shared `default` session) and its own `--output=test-results/<name>` / `--reporter=list` when it later runs the generated test file. Log in once beforehand with `npx playwright test --project=<setup-project>` so `<storage-state>` exists; pass `--no-deps` to every `npx playwright test` verification run (step 2.4) so parallel runs don't each re-run the `setup` (login) project and overwrite it.
+Loop 2.2 over the targeted scenarios one at a time, never in parallel, opening a fresh `playwright-cli` session (with its own `-s=<name>`) and reloading the auth state for each, so every scenario starts from a clean page. Log in once beforehand with `npx playwright test --project=<setup-project> --headed` so `<storage-state>` exists; pass `--no-deps` to every other `npx playwright test` run so it doesn't re-run the `setup` (login) project and overwrite it.
 
 ### 2.4 Run generated tests
 
 After generation, run the new tests once:
 
 ```bash
-PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/<group>/<scenario>.spec.ts --no-deps
+PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/<group>/<scenario>.spec.ts --no-deps --headed
 ```
 
 Any failure goes to Section 3.
@@ -399,7 +399,7 @@ Goal: fix failing tests, and update the spec if the app's intended behaviour cha
 ### 3.1 Find failing tests
 
 ```bash
-PLAYWRIGHT_HTML_OPEN=never npx playwright test
+PLAYWRIGHT_HTML_OPEN=never npx playwright test [<file> ...] --no-deps --headed   # the files you were given, else the suite
 ```
 
 Record the list of failing `<file>:<line>` entries and process them one at a time. Do not attempt parallel fixes — shared state and the single CLI session make that fragile.
@@ -409,7 +409,7 @@ Record the list of failing `<file>:<line>` entries and process them one at a tim
 Run the single failing test in debug mode in the background, then attach:
 
 ```bash
-PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/<group>/<scenario>.spec.ts:<line> --debug=cli
+PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/<group>/<scenario>.spec.ts:<line> --no-deps --headed --debug=cli
 # wait for "Debugging Instructions" and the tw-XXXX session name
 playwright-cli attach tw-XXXX
 ```
@@ -439,7 +439,7 @@ Open the spec referenced by the `// spec:` header in the test file and locate th
 
 - **Fix was purely technical** (locator drift, better assertion shape) and the spec's user-level behaviour still matches the app → leave the spec alone.
 - **Fix changed user-visible steps, inputs, order, or expected outcomes** that the spec describes → update the spec to match reality. Keep the scenario id and file path stable; only the step / expect lines change.
-- **Unclear whether the app change is intentional** (spec is stale) **or a regression** (test was right, app is wrong) → **stop and ask the user**. Provide:
+- **Unclear whether the app change is intentional** (spec is stale) **or a regression** (test was right, app is wrong) → **stop and ask the user** (a subagent can't ask: it reports the case as `needs-decision` and the manager asks). Provide:
   - the scenario id (e.g. `2.3`),
   - the spec lines that no longer match,
   - the observed app behaviour (quote a snapshot excerpt or a concrete outcome).
@@ -449,7 +449,7 @@ Only after the user answers, either update the spec (intentional change) or file
 ### 3.5 Iteration and giving up
 
 - Fix failures one at a time; rerun after each.
-- If after thorough investigation you are confident the test is correct but the app is wrong *and* the user has confirmed it's a bug: mark the test `test.fixme(...)` with a comment pointing at the user's decision or issue link. Never silently skip.
+- If after thorough investigation you are confident the test is correct and the app is wrong, mark the test `test.fixme(...)` with a comment explaining what the app does instead, or pointing at the user's decision or issue link. When you're not confident, it's a `needs-decision` (3.4). Never silently skip.
 
 ---
 

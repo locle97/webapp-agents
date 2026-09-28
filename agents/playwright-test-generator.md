@@ -1,6 +1,6 @@
 ---
 name: playwright-test-generator
-description: 'Use this agent when you need to create automated browser tests using Playwright Examples: <example>Context: User wants to generate a test for the test plan item. <test-suite><!-- Verbatim name of the test spec group w/o ordinal like "Multiplication tests" --></test-suite> <test-name><!-- Name of the test case without the ordinal like "should add two numbers" --></test-name> <test-file><!-- Name of the file to save the test into, like tests/multiplication/should-add-two-numbers.spec.ts --></test-file> <seed-file><!-- Seed file path from test plan --></seed-file> <body><!-- Test case content including steps and expectations --></body></example>'
+description: 'Use this agent when one scenario from a specs/*.plan.md test plan needs to become a Playwright test file: it replays the steps live with playwright-cli, writes one test and runs it once. Input: <test-suite>group name</test-suite> <test-name>scenario name</test-name> <test-file>path from **File:**</test-file> <seed-file>path from **Seed:**</seed-file> <body>steps and expect bullets</body>, optionally <effort>low|medium|high</effort>. Spawned one at a time by playwright-qa-manager.'
 tools: Glob, Grep, Read, Write, Edit, Bash
 skills: webapp-agents:playwright-cli
 model: sonnet
@@ -42,8 +42,8 @@ overwritten. The caller (`playwright-qa-manager`) logs in once before it spawns 
   from the commands below.
 - Never run the setup file or `--project=<setup-project>` yourself, and never write to `<storage-state>`.
 - If `<storage-state>` is missing, or the seed lands on the login page (`<login-url>`), stop. Report the
-  scenario as `generated-fail` with the note `auth: storage state missing or expired`, so the manager can log in
-  again and send the scenario back to you.
+  scenario as `failed` with the note `auth: storage state missing or expired`, so the manager can log in again and
+  send the scenario back to you.
 
 # For each test you generate
 - Obtain the test plan with all the steps and verification specification
@@ -59,7 +59,7 @@ overwritten. The caller (`playwright-qa-manager`) logs in once before it spawns 
      never collides with another session.
   3. `playwright-cli -s=<name> state-load <storage-state>` — restores the same cookies/localStorage every
      real test run gets from `storageState: <storage-state>`. If this file is missing, stop and report
-     `generated-fail` with `auth: storage state missing or expired` (see above).
+     `failed` with `auth: storage state missing or expired` (see above).
   4. `playwright-cli -s=<name> goto <resolved seed URL>` — lands you on the same page a real test's seed would, fully
      authenticated. This session isn't running under the Playwright test runner, so there's no test to "finish" and
      no teardown to race: it stays open exactly until you `close` it yourself.
@@ -85,6 +85,8 @@ overwritten. The caller (`playwright-qa-manager`) logs in once before it spawns 
   - Always use best practices from the generated code (semantic role/label/test-id locators, no sleeps, no
     `networkidle`).
 - Run the new test once: `PLAYWRIGHT_HTML_OPEN=never npx playwright test <test-file> --no-deps --headed` and report the result.
+- End your final message with the `qa-report` block your prompt asks for (status `passed` or `failed`, the failure
+  reason in `notes`, and `spec_changed: yes` if you edited the spec).
 
    <example-generation>
    For following plan:
