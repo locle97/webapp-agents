@@ -1,6 +1,6 @@
 {
   "name": "webapp-agents",
-  "description": "Project-agnostic Playwright QA and techlead agents for web apps.",
+  "description": "Project-agnostic Playwright QA, techlead and orchestrator agents for web apps.",
   "owner": {
     "name": "Loc Le",
     "email": "lpl212757@gmail.com"
