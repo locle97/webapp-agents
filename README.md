@@ -16,7 +16,7 @@ each project describes itself in its own `CLAUDE.md`, and the agents read it at 
 | `api-test-generator` | agent | Turns one API scenario into one `*.api.spec.ts` on the shared API layers and runs it |
 | `api-test-healer` | agent | Fixes failing API tests (or a shared API layer), or proves the app is wrong |
 | `playwright-qa-manager` | agent | Splits requirements into API and e2e, runs each team's planner → generator → healer (API first) and tracks state in `docs/qa-missions/`, or in `<mission>/qa/` under the orchestrator |
-| `techlead`, `feature-designer`, `feature-builder` | agents | Design → Build pipeline for one cycle of a mission (`<mission>/build/spec.md`, `plan.md`), plus defect fixes |
+| `techlead`, `feature-designer`, `feature-builder`, `feature-implementer` | agents | Design → Plan → Implement pipeline for one cycle of a mission (`<mission>/build/spec.md`, `plan.md`), plus defect fixes. The builder only plans; a fresh implementer runs `subagent-driven-development` on the reviewed plan |
 | `playwright-cli` | skill | Browser automation reference. `references/` holds the test-generation workflow, effort levels and project conventions |
 | `api-testing` | skill | REST API test reference: API conventions, the reusable test layers and check catalog, probing, API effort levels |
 | `qa-pipeline` | skill | `/webapp-agents:qa-pipeline [low\|medium\|high] <mission>` starts the QA manager |
