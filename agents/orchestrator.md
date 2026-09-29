@@ -273,8 +273,8 @@ change to a later cycle's ACs is a CCR). If no cycles remain, go to FINAL_VERIFY
 ## Phase 7 — FIX (techlead)
 
 Increment the cycle's iteration. Send the defects to the **same** techlead if you can (`SendMessage`), otherwise spawn
-one with **mode: FIX**, the defect list, the iteration number and the team brief. It has its builder write a short
-fix plan (`build/cycles/<NN>/fixes/fix-<NN>.md`), implement it, and prove each fix with the QA test named in the
+one with **mode: FIX**, the defect list, the iteration number and the team brief. It has its planner write a short
+fix plan (`build/cycles/<NN>/fixes/fix-<NN>.md`), its builder implement it, and prove each fix with the QA test named in the
 defect. Handle its report as in BUILD, then go back to VERIFY.
 
 **The iteration budget** (from the autonomy settings, default 3 fix rounds per cycle) stops runaway loops. Escalate
