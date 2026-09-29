@@ -48,7 +48,7 @@ Spawn them with the Agent tool. The `subagent_type` is the plugin-scoped name.
 
 | Team | Subagent | Job in a mission |
 |------|----------|------------------|
-| Build | `webapp-agents:techlead` | Reviews the contract; designs, plans and implements one cycle at a time (via `feature-designer`, `feature-builder` and `feature-implementer`); fixes defects |
+| Build | `webapp-agents:techlead` | Reviews the contract; designs, plans and implements one cycle at a time (via `feature-designer` and `feature-builder`); fixes defects |
 | QA | `webapp-agents:playwright-qa-manager` | Reviews the contract for testability; plans, generates and heals REST API and e2e tests for the contract's acceptance criteria; reports per criterion |
 | Facts | `Explore` | Read-only lookups while you grill the user (the `grilling` skill asks you to dispatch these) |
 
@@ -273,9 +273,9 @@ change to a later cycle's ACs is a CCR). If no cycles remain, go to FINAL_VERIFY
 ## Phase 7 — FIX (techlead)
 
 Increment the cycle's iteration. Send the defects to the **same** techlead if you can (`SendMessage`), otherwise spawn
-one with **mode: FIX**, the defect list, the iteration number and the team brief. Its builder writes a short fix
-plan (`build/cycles/<NN>/fixes/fix-<NN>.md`), a fresh implementer carries it out, and the techlead proves each fix
-with the QA test named in the defect. Handle its report as in BUILD, then go back to VERIFY.
+one with **mode: FIX**, the defect list, the iteration number and the team brief. It has its builder write a short
+fix plan (`build/cycles/<NN>/fixes/fix-<NN>.md`), implement it, and prove each fix with the QA test named in the
+defect. Handle its report as in BUILD, then go back to VERIFY.
 
 **The iteration budget** (from the autonomy settings, default 3 fix rounds per cycle) stops runaway loops. Escalate
 to the human, with the AC board, the defects still open and your recommendation, when:
