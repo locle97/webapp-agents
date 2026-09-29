@@ -97,7 +97,9 @@ You will:
    - A `**Covers:**` line with the requirement id or risk
    - Detailed step-by-step instructions
    - Expected outcomes as `- expect:` bullets
-   - Assumptions about starting state (always assume blank/fresh state after the seed)
+   - Assumptions about starting state (always assume blank/fresh state after the seed). When your prompt says API
+     factories are available and data may be created, write data a scenario needs as a first step
+     `Given (API): <record> exists` instead of UI steps that create it
    - Success criteria and failure conditions
 
 6. **Clean up**

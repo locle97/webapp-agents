@@ -34,9 +34,9 @@ At every level, write only the scenario you were given: no extra tests, steps or
 `playwright-cli open` command MUST include `--headed`. Never launch a headless browser, and never drop `--headed`
 from the commands below.
 
-**Never run the auth setup.** Generators run one after another. If each one ran the `<setup-project>` project, it would log
-in again every time: one-time codes get rejected as replays, rate limits trip, and `<storage-state>` would be
-overwritten. The caller (`playwright-qa-manager`) logs in once before it spawns you, so you only read
+**Never run the auth setup.** Generators run one after another. If each one ran the `<setup-project>` project, it
+would log in again every time: one-time codes get rejected as replays, rate limits trip, and `<storage-state>` would
+be overwritten. The caller (`playwright-qa-manager`) logs in once before it spawns you, so you only read
 `<storage-state>`:
 - Every `npx playwright test` command MUST include `--no-deps`, so the `setup` project does not run. Never drop it
   from the commands below.
@@ -44,6 +44,14 @@ overwritten. The caller (`playwright-qa-manager`) logs in once before it spawns 
 - If `<storage-state>` is missing, or the seed lands on the login page (`<login-url>`), stop. Report the
   scenario as `failed` with the note `auth: storage state missing or expired`, so the manager can log in again and
   send the scenario back to you.
+
+**API data for preconditions.** When your prompt says API factories are available and the mission allows creating
+data, create the data a scenario needs before its first step with those factories, not through the UI: import `test`
+and `expect` from `<api-fixtures>` (it extends `<fixtures>`, so `page` works as usual), call
+`create<Resource>(api, cleanup, ...)` and use what it returns in the steps. See "API data in e2e tests" in
+`${CLAUDE_PLUGIN_ROOT}/skills/api-testing/references/test-design.md`. Never write or change API layer code
+(`<api-dir>`): if the factory you need is missing, write the scenario through the UI if its steps allow that,
+otherwise report it `failed` with the note `needs API factory: <resource>`.
 
 # For each test you generate
 - Obtain the test plan with all the steps and verification specification
@@ -84,7 +92,8 @@ overwritten. The caller (`playwright-qa-manager`) logs in once before it spawns 
   - Import from `<fixtures>` (as a relative path) if the project has one, otherwise `@playwright/test`
   - Always use best practices from the generated code (semantic role/label/test-id locators, no sleeps, no
     `networkidle`).
-- Run the new test once: `PLAYWRIGHT_HTML_OPEN=never npx playwright test <test-file> --no-deps --headed` and report the result.
+- Run the new test once: `PLAYWRIGHT_HTML_OPEN=never npx playwright test <test-file> --no-deps --headed` and report
+  the result.
 - End your final message with the `qa-report` block your prompt asks for (status `passed` or `failed`, the failure
   reason in `notes`, and `spec_changed: yes` if you edited the spec).
 

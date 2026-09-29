@@ -12,15 +12,20 @@ each project describes itself in its own `CLAUDE.md`, and the agents read it at 
 | `playwright-test-planner` | agent | Writes `specs/<feature>.plan.md`, scoped by an effort level |
 | `playwright-test-generator` | agent | Turns one plan scenario into one test file and runs it |
 | `playwright-test-healer` | agent | Fixes failing tests, or marks them `test.fixme()` |
-| `playwright-qa-manager` | agent | Runs planner → generator → healer and tracks state in `docs/qa-missions/`, or in `<mission>/qa/` under the orchestrator |
+| `api-test-planner` | agent | Finds and probes REST endpoints, keeps `docs/apimap/` current, writes `specs/<feature>.api.plan.md` |
+| `api-test-generator` | agent | Turns one API scenario into one `*.api.spec.ts` on the shared API layers and runs it |
+| `api-test-healer` | agent | Fixes failing API tests (or a shared API layer), or proves the app is wrong |
+| `playwright-qa-manager` | agent | Splits requirements into API and e2e, runs each team's planner → generator → healer (API first) and tracks state in `docs/qa-missions/`, or in `<mission>/qa/` under the orchestrator |
 | `techlead`, `feature-designer`, `feature-builder` | agents | Design → Build pipeline for one cycle of a mission (`<mission>/build/spec.md`, `plan.md`), plus defect fixes |
 | `playwright-cli` | skill | Browser automation reference. `references/` holds the test-generation workflow, effort levels and project conventions |
+| `api-testing` | skill | REST API test reference: API conventions, the reusable test layers and check catalog, probing, API effort levels |
 | `qa-pipeline` | skill | `/webapp-agents:qa-pipeline [low\|medium\|high] <mission>` starts the QA manager |
 | `grilling`, `grill-me` | skills | Interview skills (vendored from [mattpocock/skills](https://github.com/mattpocock/skills)), used by `orchestrator` |
 
 ## Requirements
 
-- `playwright-cli` on `PATH` (`npm install -g @playwright/cli@latest`), and `@playwright/test` in the project.
+- `playwright-cli` on `PATH` (`npm install -g @playwright/cli@latest`), and `@playwright/test` in the project. API
+  tests use the same install (Playwright's `request` fixture); nothing else is needed.
 - The `superpowers` plugin, for the techlead pipeline (`brainstorming`, `writing-plans`,
   `subagent-driven-development`).
 
@@ -79,10 +84,32 @@ A project that follows the defaults needs nothing extra. Otherwise, or when the 
 (production data, TOTP login, a serial project for shared-user tests, locale formats, UI pitfalls), add a
 **Playwright agents** section to the project's `CLAUDE.md` using that template.
 
+## API tests
+
+The QA manager gives every requirement a layer: `api` (server rules, validation, permissions, status codes, data
+shapes), `e2e` (what a user sees and does) or both. In an orchestrated mission the contract's **Checked by** column
+decides. The API team always goes first.
+
+- **Endpoints**: the API planner finds them itself, in order: the contract's API surface, `docs/apimap/`, an OpenAPI
+  file, the server's route code, then the requests the frontend makes. It probes each one live through a
+  `playwright-cli` session that has loaded the storage state, and records what it learned in `docs/apimap/`.
+- **Auth**: the same storage state the e2e tests use. Extra roles (`admin`, `viewer`, ...) work when the setup
+  project saves a state file for each.
+- **Reusable test cases**: tests sit on five shared layers under `tests/api/`: fixtures (roles, cleanup), clients
+  (one per resource), shapes, checks (`expectShape`, `expectError`, `expectAuthMatrix`) and factories. Scenarios come
+  from a fixed check catalog (`happy`, `unauth`, `validation`, `persist`, `authz`, `boundary`, ...), and repeated cases
+  are case tables in one file. See
+  [`skills/api-testing/references/test-design.md`](skills/api-testing/references/test-design.md).
+- **API data in e2e tests**: the API fixtures extend the e2e fixtures, so an e2e test can create its preconditions
+  with the API factories (when data changes are allowed) instead of clicking through the UI.
+- **Project setup**: optional. Add an **API agents** section to the project's `CLAUDE.md` (template in
+  [`skills/api-testing/references/api-conventions.md`](skills/api-testing/references/api-conventions.md)) and,
+  ideally, an `api` project in `playwright.config.ts` that runs `*.api.spec.ts`.
+
 ## Conventions every project gets
 
 - Browsers always run headed, so you can watch.
 - Read-only by default: no data is created, changed or deleted unless the user allows it.
 - The setup (login) project runs once per mission. Generators use `--no-deps` and only read the storage state.
-- Effort levels (`low` / `medium` / `high`) cap scenarios at 5 / 8 / 15. See
-  `skills/playwright-cli/references/effort-levels.md`.
+- Effort levels (`low` / `medium` / `high`) cap scenarios at 5 / 8 / 15, for each layer's plan. See
+  `skills/playwright-cli/references/effort-levels.md` and `skills/api-testing/references/effort-levels.md`.

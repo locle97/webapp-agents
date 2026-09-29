@@ -6,6 +6,9 @@ model's reasoning effort. It exists to stop over-engineering: a one-field form d
 The planner, generator, healer and QA manager all follow this file. `playwright-site-explorer` does not take an
 effort level.
 
+REST API tests use the same levels and caps, with API-specific scope: see the `api-testing` skill's
+`references/effort-levels.md`. The cap applies to each layer's plan on its own.
+
 ## Setting the level
 
 - The user usually picks the level when starting a mission: `/qa-pipeline [low|medium|high] <mission>`.

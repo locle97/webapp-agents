@@ -1,6 +1,6 @@
 ---
 name: qa-pipeline
-description: Run a QA mission with the playwright-qa-manager agent at a chosen effort level (low, medium or high).
+description: Run a QA mission (REST API and/or e2e tests) with the playwright-qa-manager agent at a chosen effort level (low, medium or high).
 argument-hint: "[low|medium|high] <goal, requirements or Jira ticket>"
 disable-model-invocation: true
 ---
