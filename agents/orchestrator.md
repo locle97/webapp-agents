@@ -48,7 +48,7 @@ Spawn them with the Agent tool. The `subagent_type` is the plugin-scoped name.
 
 | Team | Subagent | Job in a mission |
 |------|----------|------------------|
-| Build | `webapp-agents:techlead` | Reviews the contract; designs, plans and implements one cycle at a time (via `feature-designer` and `feature-builder`); fixes defects |
+| Build | `webapp-agents:techlead` | Reviews the contract; designs, plans and implements one cycle at a time (via `feature-designer`, `feature-planner` and `feature-builder`); fixes defects |
 | QA | `webapp-agents:playwright-qa-manager` | Reviews the contract for testability; plans, generates and heals REST API and e2e tests for the contract's acceptance criteria; reports per criterion |
 | Facts | `Explore` | Read-only lookups while you grill the user (the `grilling` skill asks you to dispatch these) |
 
