@@ -1,10 +1,10 @@
 {
   "name": "webapp-agents",
   "version": "0.1.0",
-  "description": "Project-agnostic agents for web apps: a Playwright QA pipeline (site explorer, test planner, generator, healer, QA manager) driven through playwright-cli, a techlead Design → Build pipeline, and an orchestrator that drives both from one approved intent and contract until every acceptance criterion passes.",
+  "description": "Project-agnostic agents for web apps: a Playwright QA pipeline (site explorer, test planner, generator, healer, QA manager) driven through playwright-cli, REST API test agents (API planner, generator, healer) on Playwright's request fixture, a techlead Design → Build pipeline, and an orchestrator that drives both from one approved intent and contract until every acceptance criterion passes.",
   "author": {
     "name": "Loc Le",
     "email": "lpl212757@gmail.com"
   },
-  "keywords": ["playwright", "e2e", "qa", "testing", "agents", "techlead", "orchestrator"]
+  "keywords": ["playwright", "e2e", "api-testing", "rest", "qa", "testing", "agents", "techlead", "orchestrator"]
 }

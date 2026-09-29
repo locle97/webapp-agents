@@ -49,7 +49,7 @@ Spawn them with the Agent tool. The `subagent_type` is the plugin-scoped name.
 | Team | Subagent | Job in a mission |
 |------|----------|------------------|
 | Build | `webapp-agents:techlead` | Reviews the contract; designs, plans and implements one cycle at a time (via `feature-designer` and `feature-builder`); fixes defects |
-| QA | `webapp-agents:playwright-qa-manager` | Reviews the contract for testability; plans, generates and heals e2e tests for the contract's acceptance criteria; reports per criterion |
+| QA | `webapp-agents:playwright-qa-manager` | Reviews the contract for testability; plans, generates and heals REST API and e2e tests for the contract's acceptance criteria; reports per criterion |
 | Facts | `Explore` | Read-only lookups while you grill the user (the `grilling` skill asks you to dispatch these) |
 
 Both teams spawn their own specialists. If a team reports that it could not spawn them (no Agent tool), set the
@@ -116,9 +116,9 @@ A good contract is **observable**: every line is something a user or a test can 
 
 | Section | What it pins down |
 |---------|-------------------|
-| Acceptance criteria | `AC-n`: Given / When / Then, each checkable by an e2e test (or, if not, by the named command), each tracing to a success criterion and owned by exactly one cycle |
+| Acceptance criteria | `AC-n`: Given / When / Then, each checkable by an API test, an e2e test or both (or, if neither, by the named command), each tracing to a success criterion and owned by exactly one cycle. **Checked by** names the layer: `api` for server rules (validation, permissions, status codes, data shapes, side effects), `e2e` for what a user sees and does, `api+e2e` for both |
 | UI surface | Routes and URLs; every element a test touches with its role, accessible name and `data-testid`; exact user-facing messages (success, validation, error, empty states) |
-| API surface | Only if the mission adds or changes endpoints: method, path, request, response, status codes, error shape |
+| API surface | Only if the mission adds or changes endpoints, or an AC is checked by `api`: one row per endpoint with method, path, the roles that may call it, request fields (required ones marked), success status and response shape, error statuses; plus the error body shape once. QA tests these lines directly |
 | Data and state | What exists before a test runs, who creates it and how, what a test may change and how it is restored |
 | Environment | How QA reaches the build: start command (or the `webServer` entry), base URL, auth, the branch under test |
 | Out of contract | What neither side may rely on: layout, styling, copy not listed above, internals. Build is free there; QA must not assert on it |
@@ -193,8 +193,9 @@ Spawn one `techlead` and one `playwright-qa-manager` in the same message, each w
 
 - The techlead checks: every AC is buildable within the constraints and project rules; the UI and API surface fits
   the codebase; the cycles are ordered by dependency and each is small enough.
-- The QA manager checks: every AC is observable and checkable by an e2e test; every element a test needs has a
-  stable locator in the UI surface; the data a test needs exists or can be created within the data-safety rules; the
+- The QA manager checks: every AC is observable and checkable by the layer its **Checked by** names; every element
+  an e2e test needs has a stable locator in the UI surface; every endpoint an `api` AC needs is fully in the API
+  surface, with a storage state for each role it names; the data a test needs exists or can be created within the data-safety rules; the
   environment section lets it reach the build.
 
 Each returns `ACCEPT` or `CHANGES_REQUESTED` with CCRs. For every CCR: accept it (edit the contract), reject it (say
@@ -382,6 +383,7 @@ Originator: <user> · Date: <YYYY-MM-DD> · Status: <draft|approved YYYY-MM-DD> 
 | AC | Given | When | Then | Covers | Cycle | Checked by |
 |----|-------|------|------|--------|-------|------------|
 | AC-1 | <state> | <action> | <observable result> | SC-1 | 01 | e2e |
+| AC-2 | <state> | <request> | <status and body> | SC-1 | 01 | api |
 
 ### UI surface
 | Route | Element | Role / accessible name | `data-testid` | Notes |
@@ -390,7 +392,12 @@ Originator: <user> · Date: <YYYY-MM-DD> · Status: <draft|approved YYYY-MM-DD> 
 Messages (exact text): <state> → "<message>"
 
 ### API surface
-<method path, request, response, status codes, error shape; or "none">
+<"none", or:>
+| Method | Path | Roles | Request | Success | Errors |
+|--------|------|-------|---------|---------|--------|
+| POST | /api/projects | default | `{ name*: string (1-255), description?: string }` | 201 `{ id, name, description, createdAt }` | 401 anon, 422 invalid (`fields.<name>`) |
+
+Error body (every error): <e.g. `{ error: { code, message, fields? } }`>
 
 ### Data and state
 <Preconditions, who seeds them and how, what tests may change and how it is restored.>
