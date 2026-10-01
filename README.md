@@ -7,7 +7,7 @@ each project describes itself in its own `CLAUDE.md`, and the agents read it at 
 
 | Component | Kind | Job |
 |---|---|---|
-| `orchestrator` | agent | Grills the user, writes `docs/missions/<mission>/intent.md` with a Contract both teams accept, then loops techlead → QA → fix until every acceptance criterion passes |
+| `orchestrator` | agent | Grills the user, writes `docs/missions/<mission>/intent.md` with a Design and a Contract both teams accept, then loops techlead → QA → fix until every acceptance criterion passes |
 | `playwright-site-explorer` | agent | Maps the site: writes `docs/sitemap/` and one seed per area |
 | `playwright-test-planner` | agent | Writes `specs/<feature>.plan.md`, scoped by an effort level |
 | `playwright-test-generator` | agent | Turns one plan scenario into one test file and runs it |
@@ -16,7 +16,7 @@ each project describes itself in its own `CLAUDE.md`, and the agents read it at 
 | `api-test-generator` | agent | Turns one API scenario into one `*.api.spec.ts` on the shared API layers and runs it |
 | `api-test-healer` | agent | Fixes failing API tests (or a shared API layer), or proves the app is wrong |
 | `playwright-qa-manager` | agent | Splits requirements into API and e2e, runs each team's planner → generator → healer (API first) and tracks state in `docs/qa-missions/`, or in `<mission>/qa/` under the orchestrator |
-| `techlead`, `feature-designer`, `feature-planner`, `feature-builder`, `feature-implementer` | agents | Design → Plan → Build pipeline for one cycle of a mission (`<mission>/build/spec.md`, `plan.md`), plus defect fixes. The planner runs in plan mode (read-only) and returns a short plan: files that change, order of work, risks, proof. The builder is a manager: it dispatches one `feature-implementer` (sonnet) per plan step, reviews and commits each step, and tracks progress in `progress.md` |
+| `techlead` | agent | Builds one cycle of a mission: writes `<mission>/build/plan.md` from `intent.md` with `superpowers:writing-plans` (`/write-plan`), then executes it with `superpowers:subagent-driven-development`, one haiku implementer per task. Also fixes the defects QA reports |
 | `playwright-cli` | skill | Browser automation reference. `references/` holds the test-generation workflow, effort levels and project conventions |
 | `api-testing` | skill | REST API test reference: API conventions, the reusable test layers and check catalog, probing, API effort levels |
 | `qa-pipeline` | skill | `/webapp-agents:qa-pipeline [low\|medium\|high] <mission>` starts the QA manager |
@@ -26,7 +26,7 @@ each project describes itself in its own `CLAUDE.md`, and the agents read it at 
 
 - `playwright-cli` on `PATH` (`npm install -g @playwright/cli@latest`), and `@playwright/test` in the project. API
   tests use the same install (Playwright's `request` fixture); nothing else is needed.
-- The `superpowers` plugin, for the techlead pipeline's design stage (`brainstorming`).
+- The `superpowers` plugin, for the techlead's `writing-plans` and `subagent-driven-development` skills.
 
 ## Install
 
@@ -62,8 +62,8 @@ INTENT → CONTRACT_REVIEW → APPROVAL → per cycle: BUILD → VERIFY → TRIA
 
   ```
   docs/missions/<mission>/
-    intent.md  status.md                  orchestrator
-    build/     status.md, spec.md, plan.md, cycles/<NN>/fixes/   techlead team
+    intent.md  status.md                  orchestrator (intent.md holds the design and contract; no separate spec)
+    build/     plan.md, fix-*.md          techlead
     qa/        mission.md, test-plan.md   QA team
   ```
 
